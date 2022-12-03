@@ -17,6 +17,8 @@ import config
 
 defaultPort = '443'
 
+argv = ''
+
 try:
     opts, args = getopt.getopt(argv,"hl:",["list="])
 except getopt.GetoptError:
