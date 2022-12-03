@@ -32,8 +32,6 @@ def main(argv):
 
     websiteList = ''
 
-    argv = ''
-
     try:
         opts, args = getopt.getopt(argv,"hl:",["list="])
     except getopt.GetoptError:
