@@ -17,6 +17,8 @@ import config
 
 defaultPort = '443'
 
+websiteList = ''
+
 argv = ''
 
 try:
