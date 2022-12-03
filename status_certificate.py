@@ -28,9 +28,8 @@ def getCertificate(hostname,port):
         return "Failure: Unable to retrieve certificate"
 
 def main(argv):
-    defaultPort = '443'
-
     websiteList = ''
+    defaultPort = '443'
 
     try:
         opts, args = getopt.getopt(argv,"hl:",["list="])

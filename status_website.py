@@ -8,20 +8,13 @@ import re
 import validators
 from pushover import Client
 from datetime import datetime
+import sys, getopt
 
 from custom_functions import sendBasiceMail, printLog, date_time_full
 import config
 
 # Notes
 # https://stackoverflow.com/questions/1949318/checking-if-a-website + ": "-is-up-via-python
-
-headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.13; rv:63.0) Gecko/20100101 Firefox/63.0'}
-
-websiteList = open ('../configs/website-list.txt')
-
-websiteTimeout = 10
-
-reg_url = websiteList.readlines()
 
 def checkSite(website):
     req = Request(url=website, headers=headers)
@@ -66,30 +59,52 @@ def checkSite(website):
             os.remove(file)
             return (website + ": " + "back online" + "\n")
 
-mailBody = ""
+def main(argv):
+    websiteList = ''
+    websiteTimeout = 10
 
-for i in reg_url:
-    website2 = i.strip()
+    try:
+        opts, args = getopt.getopt(argv,"hl:",["list="])
+    except getopt.GetoptError:
+        print ("status_website.py -l <websiteList>")
+        sys.exit(2)
+    for opt, arg in opts:
+        if opt == "-h":
+            print ("status_website.py -l <websiteList>")
+        elif opt in ("-l", "--list"):
+            websiteList = open (arg)
+
+    headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.13; rv:63.0) Gecko/20100101 Firefox/63.0'}
+
+    reg_url = websiteList.readlines()
+
+    mailBody = ""
+
+    for i in reg_url:
+        website2 = i.strip()
+        print(mailBody)
+        
+        if validators.url(website2):
+            addString = checkSite(website2)
+            if addString is not None:
+                mailBody = mailBody + addString
+        else:
+            print(website2 + ": " + "url invalid")
+
     print(mailBody)
-    
-    if validators.url(website2):
-        addString = checkSite(website2)
-        if addString is not None:
-            mailBody = mailBody + addString
+
+    mailSubject = "ALERT: Website Status"
+
+    if mailBody != "":
+        mailBody = date_time_full() + "\n" + mailBody
+
+        sendBasiceMail(config.mailSvr, config.mailUser, config.mailPass, config.mailTo, mailSubject, mailBody)
+        print("Email Sent")
+        client = Client(config.PushoverUserKey, api_token=config.PushoverAPIToken)
+        client.send_message(mailBody, title="Website Status")
+        print("Pushover Sent\n")
     else:
-        print(website2 + ": " + "url invalid")
+        print("No changes to watched sites status")
 
-print(mailBody)
-
-mailSubject = "ALERT: Website Status"
-
-if mailBody != "":
-    mailBody = date_time_full() + "\n" + mailBody
-
-    sendBasiceMail(config.mailSvr, config.mailUser, config.mailPass, config.mailTo, mailSubject, mailBody)
-    print("Email Sent")
-    client = Client(config.PushoverUserKey, api_token=config.PushoverAPIToken)
-    client.send_message(mailBody, title="Website Status")
-    print("Pushover Sent\n")
-else:
-    print("No changes to watched sites status")
+if __name__ == "__main__":
+    main(sys.argv[1:])

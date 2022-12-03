@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 from pushover import Client
 from datetime import datetime
+import sys, getopt
 
 from custom_functions import sendBasiceMail, date_time_full
 import config
@@ -45,49 +46,62 @@ def checkPing(hostname):
                 open(file_path, 'a').close()
                 return (hostname + ": " + "offline" + "\n")
 
-hostList = open ('../configs/website-list.txt')
+def main(argv):
+    websiteList = ''
 
-reg_host = hostList.readlines()
+    try:
+        opts, args = getopt.getopt(argv,"hl:",["list="])
+    except getopt.GetoptError:
+        print ("status_ping.py -l <websiteList>")
+        sys.exit(2)
+    for opt, arg in opts:
+        if opt == "-h":
+            print ("status_ping.py -l <websiteList>")
+        elif opt in ("-l", "--list"):
+            websiteList = open (arg)
 
-mailBody = ""
+    reg_host = websiteList.readlines()
 
-alreadyDone = []
+    mailBody = ""
 
-for hostname in reg_host:
-    hostname = hostname.strip()
+    alreadyDone = []
 
-    if hostname.startswith('#'):
-        continue
-    elif hostname.startswith('https://'):
-        hostname = hostname.removeprefix("https://")
-    elif hostname.startswith('http://'):
-        hostname = hostname.removeprefix("http://")
-    hostname = hostname.split('/')[0]
-    if ":" in hostname:
-        hostname = hostname.split(':')[0]
+    for hostname in reg_host:
+        hostname = hostname.strip()
 
-    if hostname not in alreadyDone:
-        print(mailBody)
+        if hostname.startswith('#'):
+            continue
+        elif hostname.startswith('https://'):
+            hostname = hostname.removeprefix("https://")
+        elif hostname.startswith('http://'):
+            hostname = hostname.removeprefix("http://")
+        hostname = hostname.split('/')[0]
+        if ":" in hostname:
+            hostname = hostname.split(':')[0]
+
+        if hostname not in alreadyDone:
+            print(mailBody)
+            
+            addString = checkPing(hostname)
+            if addString is not None:
+                mailBody = mailBody + addString
+
+            alreadyDone.append(hostname)
+
+    print(mailBody)
+
+    mailSubject = "ALERT: Ping Check"
+
+    if mailBody != "":
+        mailBody = date_time_full() + "\n" + mailBody
         
-        addString = checkPing(hostname)
-        if addString is not None:
-            mailBody = mailBody + addString
+        sendBasiceMail(config.mailSvr, config.mailUser, config.mailPass, config.mailTo, mailSubject, mailBody)
+        print("Email Sent")
+        client = Client(config.PushoverUserKey, api_token=config.PushoverAPIToken)
+        client.send_message(mailBody, title="Ping Check")
+        print("Pushover Sent\n")
+    else:
+        print("No changes to watched sites status\n")
 
-        alreadyDone.append(hostname)
-
-print(mailBody)
-
-mailSubject = "ALERT: Ping Check"
-
-if mailBody != "":
-    mailBody = date_time_full() + "\n" + mailBody
-    
-    sendBasiceMail(config.mailSvr, config.mailUser, config.mailPass, config.mailTo, mailSubject, mailBody)
-    print("Email Sent")
-    client = Client(config.PushoverUserKey, api_token=config.PushoverAPIToken)
-    client.send_message(mailBody, title="Ping Check")
-    print("Pushover Sent\n")
-else:
-    print("No changes to watched sites status\n")
-
-
+if __name__ == "__main__":
+    main(sys.argv[1:])
