@@ -7,6 +7,7 @@ import json
 from datetime import datetime
 import socket
 from pushover import Client
+import sys, getopt
 
 from custom_functions import sendBasiceMail, hostPortStatus, date_time_full
 import config
@@ -16,7 +17,18 @@ import config
 
 defaultPort = '443'
 
-websiteList = open ('../configs/website-list.txt')
+try:
+    opts, args = getopt.getopt(argv,"hl:",["list="])
+except getopt.GetoptError:
+    print ("status_certificate.py -l <websiteList>")
+    sys.exit(2)
+for opt, arg in opts:
+    if opt == "-h":
+        print ("status_certificate.py -l <websiteList>")
+    elif opt in ("-l", "--list"):
+        websiteList = open (arg)
+
+print(websiteList)
 
 reg_url = websiteList.readlines()
 
