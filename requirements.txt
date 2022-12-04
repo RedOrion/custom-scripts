@@ -1,0 +1,6 @@
+validators
+beautifulsoup4
+urllib3
+python-pushover
+pytz
+psutil
