@@ -66,20 +66,48 @@ def checkSite(website):
             os.remove(file)
             return (website + ": " + "back online" + "\n")
 
+def checkSiteRetry(website):
+    #!/usr/bin/python3
+    import urllib3
+    from urllib3.util import Retry
+    from urllib3.exceptions import MaxRetryError
+
+    res = re.sub('[^a-zA-Z0-9 \n\.]', '-', website)
+
+    file_path = "/status_website/" + res
+    file = Path(file_path)
+
+    http = urllib3.PoolManager()
+    retry = Retry(3, raise_on_status=True, status_forcelist=range(500, 600))
+
+    try:
+        r = http.request('GET', website, retries=retry)
+        if file.exists():
+            os.remove(file)
+            return (website + ": " + "back online" + "\n")
+    except MaxRetryError as m_err:
+        print(m_err)
+        if file.exists():
+            print(website + ": " + "already offline\n")
+        else:
+            open(file_path, 'a').close()
+            print(website + ": " + "offline", end = '')
+            return (website + ": " + str(m_err) + "\n")
+
 mailBody = ""
 
 for i in reg_url:
     website2 = i.strip()
-    print(mailBody)
+    # print(mailBody)
     
     if validators.url(website2):
-        addString = checkSite(website2)
+        addString = checkSiteRetry(website2)
         if addString is not None:
             mailBody = mailBody + addString
-    else:
-        print(website2 + ": " + "url invalid")
+    # else:
+        # print(website2 + ": " + "url invalid")
 
-print(mailBody)
+# print(mailBody)
 
 mailSubject = "ALERT: Website Status"
 
